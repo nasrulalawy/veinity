@@ -1,0 +1,14 @@
+name: veinity_core
+description: Core architecture and runtime for Veinity 3D Game Engine in Flutter/Dart.
+version: 0.1.0
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  vector_math: ^2.1.4
+  meta: ^1.15.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6
