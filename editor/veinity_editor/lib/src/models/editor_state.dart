@@ -95,44 +95,94 @@ class EditorState extends ChangeNotifier {
 
     // 1. Directional Sun
     final sun = GameObject('Directional Light', 'Light');
-    sun.transform.position = Vector3(5.0, 15.0, -5.0);
+    sun.transform.position = Vector3(8.0, 16.0, -8.0);
     sun.transform.lookAt(Vector3.zero());
     sun.addComponent(LightComponent(
       type: LightType.directional,
-      intensity: 1.2,
-      color: Vector3(1.0, 0.98, 0.9),
+      intensity: 1.25,
+      color: Vector3(1.0, 0.96, 0.88),
     ));
     scene.addGameObject(sun);
 
-    // 2. Default Ground Plane
-    final ground = GameObject('Plane', 'Ground');
-    ground.transform.position = Vector3(0.0, 0.0, 0.0);
-    ground.transform.localScale = Vector3(10.0, 1.0, 10.0);
-    ground.addComponent(MeshRenderer(
-      primitiveType: PrimitiveType.plane,
-      material: MaterialData(baseColor: Vector4(0.35, 0.38, 0.42, 1.0)),
-    ));
-    scene.addGameObject(ground);
-
-    // 3. Default Cube
-    final cube = GameObject('Main Cube', 'Player');
-    cube.transform.position = Vector3(0.0, 0.5, 0.0);
-    cube.addComponent(MeshRenderer(
-      primitiveType: PrimitiveType.cube,
-      material: MaterialData(baseColor: Vector4(0.2, 0.75, 0.9, 1.0)),
-    ));
-    cube.addComponent(Rigidbody3D(mass: 1.0, useGravity: true));
-    scene.addGameObject(cube);
-
-    // 4. Scene Camera
+    // 2. Scene Camera
     final cam = GameObject('Main Camera', 'MainCamera');
-    cam.transform.position = Vector3(0.0, 3.5, -7.0);
-    cam.transform.lookAt(Vector3(0.0, 0.5, 0.0));
+    cam.transform.position = Vector3(0.0, 4.0, -8.0);
+    cam.transform.lookAt(Vector3(0.0, 1.0, 0.0));
     cam.addComponent(CameraComponent(fieldOfView: 60.0));
     scene.addGameObject(cam);
 
-    _selectedGameObject = cube;
-    log('Initialized scene "SampleScene" with 4 GameObjects.');
+    // 3. Ground Plane
+    final ground = GameObject('Ground Plane', 'Ground');
+    ground.transform.position = Vector3(0.0, 0.0, 0.0);
+    ground.transform.localScale = Vector3(20.0, 1.0, 20.0);
+    ground.addComponent(MeshRenderer(
+      primitiveType: PrimitiveType.plane,
+      material: MaterialData(baseColor: Vector4(0.28, 0.32, 0.38, 1.0)),
+    ));
+    ground.addComponent(BoxCollider3D(size: Vector3(20.0, 0.1, 20.0)));
+    scene.addGameObject(ground);
+
+    // 4. Main Player Character
+    final player = GameObject('Main Player', 'Player');
+    player.transform.position = Vector3(0.0, 0.5, 0.0);
+    player.addComponent(MeshRenderer(
+      primitiveType: PrimitiveType.cube,
+      material: MaterialData(baseColor: Vector4(0.2, 0.72, 0.95, 1.0)),
+    ));
+    player.addComponent(Rigidbody3D(mass: 1.0, useGravity: true));
+    player.addComponent(BoxCollider3D(size: Vector3(1.0, 1.0, 1.0)));
+    scene.addGameObject(player);
+
+    // 5. Pillar (North)
+    final pillarN = GameObject('Pillar (North)', 'Obstacle');
+    pillarN.transform.position = Vector3(-4.0, 1.5, 4.0);
+    pillarN.transform.localScale = Vector3(0.8, 3.0, 0.8);
+    pillarN.addComponent(MeshRenderer(
+      primitiveType: PrimitiveType.cylinder,
+      material: MaterialData(baseColor: Vector4(0.65, 0.65, 0.68, 1.0)),
+    ));
+    pillarN.addComponent(BoxCollider3D(size: Vector3(0.8, 3.0, 0.8)));
+    scene.addGameObject(pillarN);
+
+    // 6. Pillar (South)
+    final pillarS = GameObject('Pillar (South)', 'Obstacle');
+    pillarS.transform.position = Vector3(4.0, 1.5, -3.0);
+    pillarS.transform.localScale = Vector3(0.8, 3.0, 0.8);
+    pillarS.addComponent(MeshRenderer(
+      primitiveType: PrimitiveType.cylinder,
+      material: MaterialData(baseColor: Vector4(0.65, 0.65, 0.68, 1.0)),
+    ));
+    pillarS.addComponent(BoxCollider3D(size: Vector3(0.8, 3.0, 0.8)));
+    scene.addGameObject(pillarS);
+
+    // 7. Floating Gem / Collectible
+    final gem = GameObject('Floating Gem', 'Collectible');
+    gem.transform.position = Vector3(0.0, 2.2, 3.5);
+    gem.transform.localScale = Vector3(0.7, 0.7, 0.7);
+    gem.addComponent(MeshRenderer(
+      primitiveType: PrimitiveType.sphere,
+      material: MaterialData(
+        baseColor: Vector4(1.0, 0.82, 0.2, 1.0),
+        emissiveColor: Vector3(0.9, 0.7, 0.1),
+      ),
+    ));
+    gem.addComponent(SphereCollider3D(radius: 0.5, isTrigger: true));
+    scene.addGameObject(gem);
+
+    // 8. Hover Platform
+    final platform = GameObject('Hover Platform', 'Environment');
+    platform.transform.position = Vector3(3.0, 1.2, 2.5);
+    platform.transform.localScale = Vector3(2.5, 0.3, 2.5);
+    platform.addComponent(MeshRenderer(
+      primitiveType: PrimitiveType.cube,
+      material: MaterialData(baseColor: Vector4(0.45, 0.52, 0.6, 1.0)),
+    ));
+    platform.addComponent(BoxCollider3D(size: Vector3(2.5, 0.3, 2.5)));
+    scene.addGameObject(platform);
+
+    _selectedGameObject = player;
+    log('Veinity 3D Engine v2026.1 ready. Scene "SampleScene" loaded with 8 GameObjects.');
+    log('Graphics pipeline initialized: Atmospheric Procedural Skybox, Lambertian lighting.');
   }
 
   void selectGameObject(GameObject? obj) {

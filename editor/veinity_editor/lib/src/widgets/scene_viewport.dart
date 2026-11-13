@@ -24,6 +24,7 @@ class _SceneViewportState extends State<SceneViewport> with SingleTickerProvider
   late final GameObject _editorCameraObj;
   late final EditorCameraController _cameraController;
   Duration _lastElapsed = Duration.zero;
+  bool _showStats = true;
 
   @override
   void initState() {
@@ -110,8 +111,14 @@ class _SceneViewportState extends State<SceneViewport> with SingleTickerProvider
                 _buildToolbarTextButton('2D', false),
                 const SizedBox(width: 4),
                 _buildToolbarIconButton(Icons.lightbulb, true, 'Toggle Scene Lighting'),
+                const SizedBox(width: 4),
                 _buildToolbarIconButton(Icons.volume_up, false, 'Toggle Audio'),
+                const SizedBox(width: 4),
                 _buildToolbarIconButton(Icons.auto_awesome, true, 'Toggle Effects'),
+                const SizedBox(width: 6),
+                _buildToolbarTextButton('Stats', _showStats, onTap: () {
+                  setState(() => _showStats = !_showStats);
+                }),
                 const Spacer(),
                 _buildToolbarPill('Gizmos', Icons.arrow_drop_down),
               ],
@@ -164,6 +171,14 @@ class _SceneViewportState extends State<SceneViewport> with SingleTickerProvider
               right: 12,
               child: _buildUnityOrientationGizmo(),
             ),
+
+            // Unity Statistics Overlay Card (Top Left)
+            if (_showStats)
+              Positioned(
+                top: 12,
+                left: 12,
+                child: _buildStatsOverlay(),
+              ),
           ],
         ),
       ),
@@ -243,17 +258,56 @@ class _SceneViewportState extends State<SceneViewport> with SingleTickerProvider
     );
   }
 
-  Widget _buildToolbarTextButton(String title, bool active) {
-    return Container(
-      height: 18,
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: active ? UnityTheme.selectionBlue : UnityTheme.buttonBg,
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: UnityTheme.border),
+  Widget _buildToolbarTextButton(String title, bool active, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        height: 18,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: active ? UnityTheme.selectionBlue : UnityTheme.buttonBg,
+          borderRadius: BorderRadius.circular(2),
+          border: Border.all(color: UnityTheme.border),
+        ),
+        child: Text(title, style: TextStyle(fontSize: 10, color: active ? Colors.white : UnityTheme.textMain)),
       ),
-      child: Text(title, style: TextStyle(fontSize: 10, color: active ? Colors.white : UnityTheme.textMain)),
+    );
+  }
+
+  Widget _buildStatsOverlay() {
+    return Container(
+      width: 190,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xE61F2228),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: UnityTheme.borderLight, width: 0.8),
+        boxShadow: const [
+          BoxShadow(color: Colors.black45, blurRadius: 6, offset: Offset(0, 2)),
+        ],
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.query_stats, size: 12, color: UnityTheme.selectionBlue),
+              SizedBox(width: 5),
+              Text('Statistics', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: UnityTheme.textBright)),
+            ],
+          ),
+          Divider(color: UnityTheme.border, height: 10),
+          _StatLine(label: 'FPS', value: '60.0 (16.6 ms)'),
+          _StatLine(label: 'CPU', value: 'main: 1.1ms  render: 2.2ms'),
+          _StatLine(label: 'Batches', value: '14   Saved: 4'),
+          _StatLine(label: 'Tris', value: '2,140'),
+          _StatLine(label: 'Verts', value: '1,420'),
+          _StatLine(label: 'Screen', value: '1470 x 620'),
+          _StatLine(label: 'Shadows', value: '4 casters'),
+        ],
+      ),
     );
   }
 
@@ -305,6 +359,27 @@ class _SceneViewportState extends State<SceneViewport> with SingleTickerProvider
             bottom: 6,
             child: Text('Persp', style: TextStyle(fontSize: 9, color: Colors.white54)),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatLine extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _StatLine({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1.5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 9.5, color: UnityTheme.textMuted)),
+          Text(value, style: const TextStyle(fontSize: 9.5, fontFamily: 'monospace', color: UnityTheme.textBright)),
         ],
       ),
     );

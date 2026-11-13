@@ -97,6 +97,7 @@ class _ProjectConsolePanelState extends State<ProjectConsolePanel> {
               _buildFolderItem('Assets', Icons.folder, isRoot: true),
               _buildFolderItem('Materials', Icons.folder, indent: 18),
               _buildFolderItem('Models', Icons.folder, indent: 18),
+              _buildFolderItem('Prefabs', Icons.folder, indent: 18),
               _buildFolderItem('Scenes', Icons.folder, indent: 18),
               _buildFolderItem('Scripts', Icons.folder, indent: 18),
               _buildFolderItem('Textures', Icons.folder, indent: 18),
@@ -185,20 +186,55 @@ class _ProjectConsolePanelState extends State<ProjectConsolePanel> {
 
   List<Widget> _getAssetsForFolder(String folder) {
     if (folder == 'Scenes') {
-      return [_buildAssetIcon('SampleScene.scene', Icons.layers, const Color(0xFF4DB6AC))];
+      return [
+        _buildAssetIcon('SampleScene.scene', Icons.layers, const Color(0xFF4DB6AC)),
+        _buildAssetIcon('Level01_Playground.scene', Icons.layers, const Color(0xFF4DB6AC)),
+        _buildAssetIcon('MainMenu.scene', Icons.layers, const Color(0xFF4DB6AC)),
+      ];
     } else if (folder == 'Scripts') {
       return [
         _buildAssetIcon('PlayerController.dart', Icons.code, const Color(0xFF4FC3F7)),
-        _buildAssetIcon('CameraController.dart', Icons.code, const Color(0xFF4FC3F7)),
+        _buildAssetIcon('RotateCollectible.dart', Icons.code, const Color(0xFF4FC3F7)),
+        _buildAssetIcon('ThirdPersonCamera.dart', Icons.code, const Color(0xFF4FC3F7)),
+        _buildAssetIcon('GameManager.dart', Icons.code, const Color(0xFF4FC3F7)),
+        _buildAssetIcon('CoinTrigger.dart', Icons.code, const Color(0xFF4FC3F7)),
       ];
     } else if (folder == 'Materials') {
-      return [_buildAssetIcon('Default-Material.mat', Icons.blur_circular, const Color(0xFFFFB74D))];
+      return [
+        _buildAssetIcon('Player_Blue.mat', Icons.blur_circular, const Color(0xFF42A5F5)),
+        _buildAssetIcon('Ground_Grid.mat', Icons.blur_circular, const Color(0xFF78909C)),
+        _buildAssetIcon('Gem_Glow.mat', Icons.blur_circular, const Color(0xFFFFCA28)),
+        _buildAssetIcon('Pillar_Stone.mat', Icons.blur_circular, const Color(0xFFB0BEC5)),
+        _buildAssetIcon('Skybox_Atmosphere.mat', Icons.blur_circular, const Color(0xFF5C6BC0)),
+      ];
+    } else if (folder == 'Prefabs') {
+      return [
+        _buildAssetIcon('Player.prefab', Icons.inventory_2, const Color(0xFF42A5F5)),
+        _buildAssetIcon('Pillar_Column.prefab', Icons.inventory_2, const Color(0xFF42A5F5)),
+        _buildAssetIcon('Gem_Pickup.prefab', Icons.inventory_2, const Color(0xFF42A5F5)),
+        _buildAssetIcon('Platform.prefab', Icons.inventory_2, const Color(0xFF42A5F5)),
+      ];
     } else if (folder == 'Models') {
-      return [_buildAssetIcon('Cube.fbx', Icons.view_in_ar, const Color(0xFF81C784))];
+      return [
+        _buildAssetIcon('character_mesh.fbx', Icons.view_in_ar, const Color(0xFF81C784)),
+        _buildAssetIcon('pillar_column.glb', Icons.view_in_ar, const Color(0xFF81C784)),
+        _buildAssetIcon('gem_diamond.gltf', Icons.view_in_ar, const Color(0xFF81C784)),
+        _buildAssetIcon('hover_platform.obj', Icons.view_in_ar, const Color(0xFF81C784)),
+      ];
+    } else if (folder == 'Textures') {
+      return [
+        _buildAssetIcon('floor_grid_albedo.png', Icons.image, const Color(0xFFAB47BC)),
+        _buildAssetIcon('pillar_stone_normal.png', Icons.image, const Color(0xFFAB47BC)),
+        _buildAssetIcon('gem_glow_emissive.png', Icons.image, const Color(0xFFAB47BC)),
+      ];
     }
     return [
-      _buildAssetIcon('Textures', Icons.folder, const Color(0xFFF0B342)),
+      _buildAssetIcon('Materials', Icons.folder, const Color(0xFFF0B342)),
+      _buildAssetIcon('Models', Icons.folder, const Color(0xFFF0B342)),
+      _buildAssetIcon('Prefabs', Icons.folder, const Color(0xFFF0B342)),
       _buildAssetIcon('Scenes', Icons.folder, const Color(0xFFF0B342)),
+      _buildAssetIcon('Scripts', Icons.folder, const Color(0xFFF0B342)),
+      _buildAssetIcon('Textures', Icons.folder, const Color(0xFFF0B342)),
     ];
   }
 

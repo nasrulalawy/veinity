@@ -25,19 +25,23 @@ class FlutterFallbackRenderer extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (size.width <= 0 || size.height <= 0) return;
 
-    // 1. Clear background
+    // 1. Procedural Unity-style Atmospheric Skybox & Ground Gradient
+    final skyPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Color(0xFF233040), // Unity Deep Sky
+          Color(0xFF384A5F), // Mid-sky
+          Color(0xFF4C5E74), // Luminous Horizon Haze
+          Color(0xFF292C34), // Just below horizon
+          Color(0xFF1B1D22), // Ground Nadir
+        ],
+        stops: [0.0, 0.44, 0.50, 0.56, 1.0],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), skyPaint);
+
     final camera = Scene.mainCamera;
-    final clearColor = camera != null
-        ? Color.from(
-            alpha: camera.clearColor.w.clamp(0.0, 1.0),
-            red: camera.clearColor.x.clamp(0.0, 1.0),
-            green: camera.clearColor.y.clamp(0.0, 1.0),
-            blue: camera.clearColor.z.clamp(0.0, 1.0),
-          )
-        : const Color(0xFF1E1E28);
-
-    canvas.drawColor(clearColor, BlendMode.src);
-
     if (camera == null) return;
 
     final aspectRatio = size.width / size.height;
@@ -122,6 +126,10 @@ class FlutterFallbackRenderer extends CustomPainter {
       quads = [
         [Vector3(-0.5, 0.0, 0.5), Vector3(0.5, 0.0, 0.5), Vector3(0.5, 0.0, -0.5), Vector3(-0.5, 0.0, -0.5)],
       ];
+    } else if (mesh.primitiveType == PrimitiveType.sphere) {
+      quads = _generateSphereFaces();
+    } else if (mesh.primitiveType == PrimitiveType.cylinder) {
+      quads = _generateCylinderFaces();
     } else {
       quads = cubeQuads;
     }
@@ -166,14 +174,101 @@ class FlutterFallbackRenderer extends CustomPainter {
         totalDepth += clip.w;
       }
 
-      if (!isBehindCamera && screenPoints.length == 4) {
+      if (!isBehindCamera && screenPoints.length >= 3) {
         outFaces.add(_RenderFace(
           screenPoints: screenPoints,
-          depth: totalDepth / 4.0,
+          depth: totalDepth / screenPoints.length,
           color: litColor,
         ));
       }
     }
+  }
+
+  static List<List<Vector3>> _generateSphereFaces() {
+    final faces = <List<Vector3>>[];
+    const latBands = 6;
+    const lonBands = 8;
+    const radius = 0.5;
+
+    for (var lat = 0; lat < latBands; lat++) {
+      final theta1 = lat * math.pi / latBands;
+      final theta2 = (lat + 1) * math.pi / latBands;
+
+      for (var lon = 0; lon < lonBands; lon++) {
+        final phi1 = lon * 2.0 * math.pi / lonBands;
+        final phi2 = (lon + 1) * 2.0 * math.pi / lonBands;
+
+        final v1 = Vector3(
+          radius * math.sin(theta1) * math.cos(phi1),
+          radius * math.cos(theta1),
+          radius * math.sin(theta1) * math.sin(phi1),
+        );
+        final v2 = Vector3(
+          radius * math.sin(theta1) * math.cos(phi2),
+          radius * math.cos(theta1),
+          radius * math.sin(theta1) * math.sin(phi2),
+        );
+        final v3 = Vector3(
+          radius * math.sin(theta2) * math.cos(phi2),
+          radius * math.cos(theta2),
+          radius * math.sin(theta2) * math.sin(phi2),
+        );
+        final v4 = Vector3(
+          radius * math.sin(theta2) * math.cos(phi1),
+          radius * math.cos(theta2),
+          radius * math.sin(theta2) * math.sin(phi1),
+        );
+
+        if (lat == 0) {
+          faces.add([v1, v3, v4]);
+        } else if (lat == latBands - 1) {
+          faces.add([v1, v2, v3]);
+        } else {
+          faces.add([v1, v2, v3, v4]);
+        }
+      }
+    }
+    return faces;
+  }
+
+  static List<List<Vector3>> _generateCylinderFaces() {
+    final faces = <List<Vector3>>[];
+    const segments = 8;
+    const radius = 0.5;
+    const halfHeight = 0.5;
+
+    for (var i = 0; i < segments; i++) {
+      final a1 = i * 2.0 * math.pi / segments;
+      final a2 = (i + 1) * 2.0 * math.pi / segments;
+
+      final x1 = radius * math.cos(a1);
+      final z1 = radius * math.sin(a1);
+      final x2 = radius * math.cos(a2);
+      final z2 = radius * math.sin(a2);
+
+      // Side wall quad
+      faces.add([
+        Vector3(x1, -halfHeight, z1),
+        Vector3(x2, -halfHeight, z2),
+        Vector3(x2, halfHeight, z2),
+        Vector3(x1, halfHeight, z1),
+      ]);
+
+      // Top cap triangle
+      faces.add([
+        Vector3(0.0, halfHeight, 0.0),
+        Vector3(x2, halfHeight, z2),
+        Vector3(x1, halfHeight, z1),
+      ]);
+
+      // Bottom cap triangle
+      faces.add([
+        Vector3(0.0, -halfHeight, 0.0),
+        Vector3(x1, -halfHeight, z1),
+        Vector3(x2, -halfHeight, z2),
+      ]);
+    }
+    return faces;
   }
 
   @override

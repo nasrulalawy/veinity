@@ -6,6 +6,7 @@ import 'src/widgets/inspector_panel.dart';
 import 'src/widgets/project_console_panel.dart';
 import 'src/widgets/scene_viewport.dart';
 import 'src/widgets/unity_menubar.dart';
+import 'src/widgets/unity_status_bar.dart';
 
 void main() {
   runApp(const VeinityEditorApp());

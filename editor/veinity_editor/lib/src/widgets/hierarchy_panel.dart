@@ -18,9 +18,10 @@ class _HierarchyPanelState extends State<HierarchyPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredObjects = widget.state.scene.rootGameObjects.where((obj) {
+    final allFlattened = _flattenHierarchy(widget.state.scene.rootGameObjects);
+    final filteredItems = allFlattened.where((item) {
       if (_searchQuery.isEmpty) return true;
-      return obj.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      return item.obj.name.toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
 
     return Container(
@@ -163,19 +164,28 @@ class _HierarchyPanelState extends State<HierarchyPanel> {
           // 4. GameObjects Tree
           Expanded(
             child: ListView.builder(
-              itemCount: filteredObjects.length,
+              itemCount: filteredItems.length,
               itemBuilder: (context, index) {
-                final obj = filteredObjects[index];
+                final item = filteredItems[index];
+                final obj = item.obj;
                 final isSelected = widget.state.selectedGameObject == obj;
+                final hasChildren = obj.transform.childCount > 0;
 
                 return InkWell(
                   onTap: () => widget.state.selectGameObject(obj),
                   child: Container(
                     height: 20,
-                    padding: const EdgeInsets.only(left: 24, right: 8),
+                    padding: EdgeInsets.only(left: 10.0 + item.depth * 14.0, right: 8),
                     color: isSelected ? UnityTheme.selectionBlue : Colors.transparent,
                     child: Row(
                       children: [
+                        // Caret for children
+                        SizedBox(
+                          width: 14,
+                          child: hasChildren
+                              ? const Icon(Icons.arrow_drop_down, size: 14, color: UnityTheme.textMuted)
+                              : null,
+                        ),
                         // Eye toggle icon
                         GestureDetector(
                           onTap: () {
@@ -190,7 +200,7 @@ class _HierarchyPanelState extends State<HierarchyPanel> {
                                 : (obj.activeSelf ? UnityTheme.textDim : const Color(0xFF444444)),
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 5),
                         // Type Icon
                         Icon(
                           _getIconForObject(obj),
@@ -221,6 +231,18 @@ class _HierarchyPanelState extends State<HierarchyPanel> {
         ],
       ),
     );
+  }
+
+  List<({GameObject obj, int depth})> _flattenHierarchy(List<GameObject> roots, [int depth = 0]) {
+    final result = <({GameObject obj, int depth})>[];
+    for (final obj in roots) {
+      result.add((obj: obj, depth: depth));
+      if (obj.transform.childCount > 0) {
+        final childrenObjs = obj.transform.children.map((t) => t.gameObject).toList();
+        result.addAll(_flattenHierarchy(childrenObjs, depth + 1));
+      }
+    }
+    return result;
   }
 
   IconData _getIconForObject(GameObject obj) {

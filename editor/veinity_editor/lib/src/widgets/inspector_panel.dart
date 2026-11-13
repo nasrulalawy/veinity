@@ -80,9 +80,15 @@ class _InspectorPanelState extends State<InspectorPanel> {
                     const SizedBox(height: 8),
                   ],
 
+                  // 5. Material & Shader Inspector (if MeshRenderer attached)
+                  if (obj.tryGetComponent<MeshRenderer>() != null) ...[
+                    _buildMaterialCard(obj.tryGetComponent<MeshRenderer>()!),
+                    const SizedBox(height: 8),
+                  ],
+
                   const SizedBox(height: 12),
 
-                  // 5. Centered Unity "Add Component" Button
+                  // 6. Centered Unity "Add Component" Button
                   _buildAddComponentButton(obj),
                   const SizedBox(height: 24),
                 ],
@@ -274,6 +280,8 @@ class _InspectorPanelState extends State<InspectorPanel> {
   Widget _buildComponentSection(GameObject obj, Component comp) {
     if (comp is MeshRenderer) return _buildMeshRendererSection(comp);
     if (comp is Rigidbody3D) return _buildRigidbodySection(comp);
+    if (comp is BoxCollider3D) return _buildBoxColliderSection(comp);
+    if (comp is SphereCollider3D) return _buildSphereColliderSection(comp);
     if (comp is LightComponent) return _buildLightSection(comp);
     if (comp is CameraComponent) return _buildCameraSection(comp);
 
@@ -281,6 +289,159 @@ class _InspectorPanelState extends State<InspectorPanel> {
       title: comp.runtimeType.toString(),
       icon: Icons.code,
       child: Text('Custom Component (${comp.runtimeType})', style: UnityTheme.labelStyle),
+    );
+  }
+
+  Widget _buildBoxColliderSection(BoxCollider3D box) {
+    return _ComponentContainer(
+      title: 'Box Collider',
+      icon: Icons.check_box_outline_blank,
+      child: Column(
+        children: [
+          _buildPropRow('Is Trigger', Checkbox(
+            value: box.isTrigger,
+            activeColor: UnityTheme.selectionBlue,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+            onChanged: (v) {
+              if (v != null) {
+                setState(() => box.isTrigger = v);
+                widget.state.notifyObjectModified();
+              }
+            },
+          )),
+          const SizedBox(height: 4),
+          _buildVector3Row('Center', box.center, (c) {
+            box.center = c;
+            widget.state.notifyObjectModified();
+          }),
+          const SizedBox(height: 4),
+          _buildVector3Row('Size', box.size, (s) {
+            box.size = s;
+            widget.state.notifyObjectModified();
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSphereColliderSection(SphereCollider3D sphere) {
+    return _ComponentContainer(
+      title: 'Sphere Collider',
+      icon: Icons.circle_outlined,
+      child: Column(
+        children: [
+          _buildPropRow('Is Trigger', Checkbox(
+            value: sphere.isTrigger,
+            activeColor: UnityTheme.selectionBlue,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+            onChanged: (v) {
+              if (v != null) {
+                setState(() => sphere.isTrigger = v);
+                widget.state.notifyObjectModified();
+              }
+            },
+          )),
+          const SizedBox(height: 4),
+          _buildVector3Row('Center', sphere.center, (c) {
+            sphere.center = c;
+            widget.state.notifyObjectModified();
+          }),
+          const SizedBox(height: 4),
+          _buildPropRow('Radius', SizedBox(
+            width: 80,
+            height: 20,
+            child: Container(
+              decoration: BoxDecoration(color: UnityTheme.inputBg, border: Border.all(color: UnityTheme.inputBorder)),
+              child: TextFormField(
+                initialValue: sphere.radius.toStringAsFixed(2),
+                style: const TextStyle(fontSize: 10.5, color: UnityTheme.textMain),
+                decoration: const InputDecoration(border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.only(left: 4, bottom: 12)),
+                onFieldSubmitted: (v) {
+                  final parsed = double.tryParse(v);
+                  if (parsed != null) {
+                    sphere.radius = parsed;
+                    widget.state.notifyObjectModified();
+                  }
+                },
+              ),
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMaterialCard(MeshRenderer mesh) {
+    final mat = mesh.material;
+    final baseColor = mat.baseColor;
+    final displayColor = Color.from(
+      alpha: baseColor.w.clamp(0.0, 1.0),
+      red: baseColor.x.clamp(0.0, 1.0),
+      green: baseColor.y.clamp(0.0, 1.0),
+      blue: baseColor.z.clamp(0.0, 1.0),
+    );
+
+    return _ComponentContainer(
+      title: 'Material (Standard PBR)',
+      icon: Icons.blur_circular,
+      child: Column(
+        children: [
+          _buildPropRow('Shader', const Text('Standard', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: UnityTheme.textBright))),
+          const SizedBox(height: 6),
+          _buildPropRow('Rendering Mode', const Text('Opaque', style: TextStyle(fontSize: 11, color: UnityTheme.textMain))),
+          const SizedBox(height: 6),
+          // Albedo Color Row
+          _buildPropRow('Albedo', Row(
+            children: [
+              Container(
+                width: 32,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: displayColor,
+                  border: Border.all(color: Colors.white24),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'RGBA: ${(baseColor.x * 255).toInt()}, ${(baseColor.y * 255).toInt()}, ${(baseColor.z * 255).toInt()}',
+                style: const TextStyle(fontSize: 10, color: UnityTheme.textMuted),
+              ),
+            ],
+          )),
+          const SizedBox(height: 6),
+          // Metallic Slider
+          _buildPropRow('Metallic', SliderTheme(
+            data: SliderThemeData(trackHeight: 2, thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5)),
+            child: Slider(
+              value: mat.metallic.clamp(0.0, 1.0),
+              min: 0.0,
+              max: 1.0,
+              activeColor: UnityTheme.selectionBlue,
+              onChanged: (v) {
+                setState(() => mat.metallic = v);
+                widget.state.notifyObjectModified();
+              },
+            ),
+          )),
+          // Smoothness Slider
+          _buildPropRow('Smoothness', SliderTheme(
+            data: SliderThemeData(trackHeight: 2, thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5)),
+            child: Slider(
+              value: (1.0 - mat.roughness).clamp(0.0, 1.0),
+              min: 0.0,
+              max: 1.0,
+              activeColor: UnityTheme.selectionBlue,
+              onChanged: (v) {
+                setState(() => mat.roughness = (1.0 - v).clamp(0.0, 1.0));
+                widget.state.notifyObjectModified();
+              },
+            ),
+          )),
+        ],
+      ),
     );
   }
 
@@ -443,6 +604,8 @@ class _InspectorPanelState extends State<InspectorPanel> {
       child: PopupMenuButton<String>(
         onSelected: (type) {
           if (type == 'rb') obj.addComponent(Rigidbody3D());
+          if (type == 'box') obj.addComponent(BoxCollider3D());
+          if (type == 'sphere') obj.addComponent(SphereCollider3D());
           if (type == 'mesh') obj.addComponent(MeshRenderer());
           if (type == 'light') obj.addComponent(LightComponent(type: LightType.point));
           if (type == 'camera') obj.addComponent(CameraComponent());
@@ -451,6 +614,9 @@ class _InspectorPanelState extends State<InspectorPanel> {
         },
         itemBuilder: (context) => const [
           PopupMenuItem(height: 22, value: 'rb', child: Text('Physics > Rigidbody', style: TextStyle(fontSize: 11))),
+          PopupMenuItem(height: 22, value: 'box', child: Text('Physics > Box Collider', style: TextStyle(fontSize: 11))),
+          PopupMenuItem(height: 22, value: 'sphere', child: Text('Physics > Sphere Collider', style: TextStyle(fontSize: 11))),
+          PopupMenuDivider(height: 1),
           PopupMenuItem(height: 22, value: 'mesh', child: Text('Mesh > Mesh Renderer', style: TextStyle(fontSize: 11))),
           PopupMenuItem(height: 22, value: 'light', child: Text('Rendering > Light', style: TextStyle(fontSize: 11))),
           PopupMenuItem(height: 22, value: 'camera', child: Text('Rendering > Camera', style: TextStyle(fontSize: 11))),
