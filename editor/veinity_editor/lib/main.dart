@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'src/models/editor_state.dart';
-import 'src/widgets/console_panel.dart';
-import 'src/widgets/editor_toolbar.dart';
+import 'src/theme/unity_theme.dart';
 import 'src/widgets/hierarchy_panel.dart';
 import 'src/widgets/inspector_panel.dart';
+import 'src/widgets/project_console_panel.dart';
 import 'src/widgets/scene_viewport.dart';
+import 'src/widgets/unity_menubar.dart';
 
 void main() {
   runApp(const VeinityEditorApp());
@@ -16,15 +17,9 @@ class VeinityEditorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Veinity 3D Game Engine Editor',
+      title: 'Veinity Editor (Unity Edition)',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(useMaterial3: true).copyWith(
-        scaffoldBackgroundColor: const Color(0xFF181A1F),
-        colorScheme: const ColorScheme.dark(
-          primary: Colors.cyanAccent,
-          surface: Color(0xFF1E2227),
-        ),
-      ),
+      theme: UnityTheme.themeData,
       home: const EditorHomeScreen(),
     );
   }
@@ -61,11 +56,12 @@ class _EditorHomeScreenState extends State<EditorHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: UnityTheme.windowBg,
       body: SafeArea(
         child: Column(
           children: [
-            // 1. Top Control Bar (Toolbar)
-            EditorToolbar(state: _editorState),
+            // 1. Classic Unity Menubar & Toolbar
+            UnityMenubar(state: _editorState),
 
             // 2. Middle Main Workspace (Hierarchy | Viewport | Inspector)
             Expanded(
@@ -85,8 +81,8 @@ class _EditorHomeScreenState extends State<EditorHomeScreen> {
               ),
             ),
 
-            // 3. Bottom Panel (Console & Project Assets)
-            ConsolePanel(state: _editorState),
+            // 3. Bottom Panel (Project Assets & Console)
+            ProjectConsolePanel(state: _editorState),
           ],
         ),
       ),

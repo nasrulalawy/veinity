@@ -4,9 +4,11 @@ import 'package:flutter/scheduler.dart';
 import 'package:veinity_flutter/veinity_flutter.dart';
 import '../controllers/editor_camera_controller.dart';
 import '../models/editor_state.dart';
+import '../theme/unity_theme.dart';
 import 'grid_painter.dart';
 
-/// The interactive 3D Scene Viewport in the Veinity Editor.
+/// Unity-style Viewport supporting [Scene] View and [Game] View tabs,
+/// complete with Viewport toolbar and 3D orientation gizmo.
 class SceneViewport extends StatefulWidget {
   final EditorState state;
 
@@ -16,8 +18,7 @@ class SceneViewport extends StatefulWidget {
   State<SceneViewport> createState() => _SceneViewportState();
 }
 
-class _SceneViewportState extends State<SceneViewport>
-    with SingleTickerProviderStateMixin {
+class _SceneViewportState extends State<SceneViewport> with SingleTickerProviderStateMixin {
   late final GameLoop _gameLoop;
   late final Ticker _ticker;
   late final GameObject _editorCameraObj;
@@ -29,13 +30,10 @@ class _SceneViewportState extends State<SceneViewport>
     super.initState();
     _gameLoop = GameLoop(widget.state.scene);
 
-    // Setup dedicated Editor Camera
-    _editorCameraObj = GameObject('Editor Camera');
+    // Setup dedicated Editor Camera for Scene View
+    _editorCameraObj = GameObject('Scene View Camera');
     _editorCameraObj.addComponent(CameraComponent(fieldOfView: 60.0));
     _cameraController = EditorCameraController(cameraObject: _editorCameraObj);
-
-    // Ensure editor camera is the active scene camera
-    Scene.mainCamera = _editorCameraObj.getComponent<CameraComponent>();
 
     _ticker = createTicker(_onTick);
     _ticker.start();
@@ -50,14 +48,11 @@ class _SceneViewportState extends State<SceneViewport>
     final dt = (elapsed - _lastElapsed).inMicroseconds / 1000000.0;
     _lastElapsed = elapsed;
 
-    // Only tick game scripts and physics when in Play Mode
     if (widget.state.isPlaying && !widget.state.isPaused) {
       _gameLoop.tick(dt);
     }
 
-    if (mounted) {
-      setState(() {});
-    }
+    if (mounted) setState(() {});
   }
 
   @override
@@ -69,6 +64,70 @@ class _SceneViewportState extends State<SceneViewport>
 
   @override
   Widget build(BuildContext context) {
+    final isSceneTab = widget.state.activeViewportTab == ViewportTab.scene;
+
+    // Set appropriate active camera depending on tab
+    if (isSceneTab) {
+      Scene.mainCamera = _editorCameraObj.getComponent<CameraComponent>();
+    } else {
+      final sceneCams = widget.state.scene.findObjectsOfType<CameraComponent>();
+      if (sceneCams.isNotEmpty) {
+        Scene.mainCamera = sceneCams.first;
+      }
+    }
+
+    return Container(
+      color: UnityTheme.panelBgDark,
+      child: Column(
+        children: [
+          // 1. Tab Bar: [ Scene ] [ Game ]
+          Container(
+            height: 26,
+            color: UnityTheme.panelHeaderInactive,
+            child: Row(
+              children: [
+                _buildViewportTab('Scene', ViewportTab.scene),
+                _buildViewportTab('Game', ViewportTab.game),
+                const Spacer(),
+                const Icon(Icons.more_vert, size: 14, color: UnityTheme.textMuted),
+                const SizedBox(width: 6),
+              ],
+            ),
+          ),
+
+          // 2. Viewport Sub-Toolbar (Shaded, 2D, Lighting, Gizmos)
+          Container(
+            height: 24,
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            decoration: const BoxDecoration(
+              color: UnityTheme.panelHeader,
+              border: Border(bottom: BorderSide(color: UnityTheme.border)),
+            ),
+            child: Row(
+              children: [
+                _buildToolbarPill('Shaded', Icons.arrow_drop_down),
+                const SizedBox(width: 4),
+                _buildToolbarTextButton('2D', false),
+                const SizedBox(width: 4),
+                _buildToolbarIconButton(Icons.lightbulb, true, 'Toggle Scene Lighting'),
+                _buildToolbarIconButton(Icons.volume_up, false, 'Toggle Audio'),
+                _buildToolbarIconButton(Icons.auto_awesome, true, 'Toggle Effects'),
+                const Spacer(),
+                _buildToolbarPill('Gizmos', Icons.arrow_drop_down),
+              ],
+            ),
+          ),
+
+          // 3. Main Viewport Area
+          Expanded(
+            child: isSceneTab ? _buildSceneView() : _buildGameView(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSceneView() {
     return Listener(
       onPointerSignal: (event) {
         if (event is PointerScrollEvent) {
@@ -78,87 +137,176 @@ class _SceneViewportState extends State<SceneViewport>
       },
       child: GestureDetector(
         onPanUpdate: (details) {
-          // Orbit camera on drag
           _cameraController.handleOrbit(details.delta.dx, details.delta.dy);
           setState(() {});
         },
-        child: Container(
-          color: const Color(0xFF181A1F),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // 1. 3D Scene Renderer
-              CustomPaint(
-                painter: FlutterFallbackRenderer(scene: widget.state.scene),
-                isComplex: true,
-                willChange: true,
-              ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // 3D Scene Mesh Rendering
+            CustomPaint(
+              painter: FlutterFallbackRenderer(scene: widget.state.scene),
+              isComplex: true,
+              willChange: true,
+            ),
 
-              // 2. 3D Grid & Selection Gizmo
-              CustomPaint(
-                painter: GridPainter(
-                  scene: widget.state.scene,
-                  selectedObject: widget.state.selectedGameObject,
-                ),
+            // 3D Grid & Selection Gizmo
+            CustomPaint(
+              painter: GridPainter(
+                scene: widget.state.scene,
+                selectedObject: widget.state.selectedGameObject,
               ),
+            ),
 
-              // 3. Top-Left Viewport Mode Badge
-              Positioned(
-                top: 12,
-                left: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: widget.state.isPlaying
-                        ? Colors.green.withValues(alpha: 0.25)
-                        : Colors.black.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: widget.state.isPlaying ? Colors.greenAccent : Colors.white24,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        widget.state.isPlaying ? Icons.play_arrow : Icons.edit,
-                        size: 13,
-                        color: widget.state.isPlaying ? Colors.greenAccent : Colors.white70,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        widget.state.isPlaying ? 'PLAYING' : 'EDITING',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: widget.state.isPlaying ? Colors.greenAccent : Colors.white70,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            // Iconic Unity Orientation Gizmo (Top Right Cones)
+            Positioned(
+              top: 12,
+              right: 12,
+              child: _buildUnityOrientationGizmo(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-              // 4. Top-Right Navigation Hints
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'Mouse Drag: Orbit  |  Scroll: Zoom',
-                    style: TextStyle(fontSize: 11, color: Colors.white54),
-                  ),
-                ),
-              ),
-            ],
+  Widget _buildGameView() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        CustomPaint(
+          painter: FlutterFallbackRenderer(scene: widget.state.scene),
+        ),
+        // Aspect Ratio Badge
+        Positioned(
+          top: 8,
+          left: 8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: const Text('Free Aspect  |  Display 1 (16:9)', style: TextStyle(fontSize: 10, color: Colors.white70)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildViewportTab(String label, ViewportTab tab) {
+    final isActive = widget.state.activeViewportTab == tab;
+
+    return InkWell(
+      onTap: () => widget.state.setViewportTab(tab),
+      child: Container(
+        height: 26,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: isActive ? UnityTheme.panelBgDark : Colors.transparent,
+          border: isActive
+              ? const Border(
+                  top: BorderSide(color: UnityTheme.borderLight, width: 1.0),
+                  right: BorderSide(color: UnityTheme.border, width: 1.0),
+                )
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            color: isActive ? UnityTheme.textBright : UnityTheme.textMuted,
           ),
         ),
       ),
     );
   }
-}
 
+  Widget _buildToolbarPill(String title, IconData icon) {
+    return Container(
+      height: 18,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        color: UnityTheme.buttonBg,
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(color: UnityTheme.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 10, color: UnityTheme.textMain)),
+          Icon(icon, size: 12, color: UnityTheme.textMuted),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToolbarTextButton(String title, bool active) {
+    return Container(
+      height: 18,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: active ? UnityTheme.selectionBlue : UnityTheme.buttonBg,
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(color: UnityTheme.border),
+      ),
+      child: Text(title, style: TextStyle(fontSize: 10, color: active ? Colors.white : UnityTheme.textMain)),
+    );
+  }
+
+  Widget _buildToolbarIconButton(IconData icon, bool active, String tooltip) {
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        width: 20,
+        height: 18,
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: active ? UnityTheme.buttonBg : Colors.transparent,
+          borderRadius: BorderRadius.circular(2),
+        ),
+        child: Icon(icon, size: 11, color: active ? Colors.white : UnityTheme.textDim),
+      ),
+    );
+  }
+
+  Widget _buildUnityOrientationGizmo() {
+    return Container(
+      width: 70,
+      height: 70,
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.3),
+        shape: BoxShape.circle,
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Cones representation
+          Positioned(
+            right: 8,
+            child: Text('x', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: UnityTheme.axisX)),
+          ),
+          Positioned(
+            top: 6,
+            child: Text('y', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: UnityTheme.axisY)),
+          ),
+          Positioned(
+            left: 8,
+            child: Text('z', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: UnityTheme.axisZ)),
+          ),
+          // Center cone
+          Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.white70, shape: BoxShape.circle)),
+          // Persp label
+          const Positioned(
+            bottom: 6,
+            child: Text('Persp', style: TextStyle(fontSize: 9, color: Colors.white54)),
+          ),
+        ],
+      ),
+    );
+  }
+}

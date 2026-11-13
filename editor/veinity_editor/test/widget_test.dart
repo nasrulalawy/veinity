@@ -3,8 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:veinity_editor/main.dart';
 
 void main() {
-  testWidgets('Veinity Editor launches with complete Unity-style IDE layout', (tester) async {
-    // Set a desktop resolution (1600 x 900)
+  testWidgets('Veinity Editor launches with authentic Unity-style layout and theme', (tester) async {
     tester.view.physicalSize = const Size(1600, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -12,39 +11,49 @@ void main() {
     await tester.pumpWidget(const VeinityEditorApp());
     await tester.pump(const Duration(milliseconds: 16));
 
-    // 1. Verify Toolbar
-    expect(find.text('VEINITY'), findsOneWidget);
-    expect(find.text('3D ENGINE'), findsOneWidget);
-    expect(find.text('Add Object'), findsOneWidget);
+    // 1. Verify Unity Menu Bar & Toolbar
+    expect(find.text('File'), findsOneWidget);
+    expect(find.text('GameObject'), findsOneWidget);
+    expect(find.text('Component'), findsOneWidget);
+    expect(find.text('Pivot'), findsOneWidget);
+    expect(find.text('Global'), findsOneWidget);
 
-    // 2. Verify Hierarchy & Default Objects ("Main Cube" is both in Hierarchy and Inspector)
-    expect(find.text('HIERARCHY'), findsOneWidget);
-    expect(find.text('Main Cube'), findsNWidgets(2));
-    expect(find.text('Ground'), findsOneWidget);
-    expect(find.text('Directional Light'), findsOneWidget);
+    // 2. Verify Hierarchy Panel Tab & Items
+    expect(find.text('Hierarchy'), findsOneWidget);
+    expect(find.text('SampleScene'), findsOneWidget);
+    expect(find.text('Main Cube'), findsNWidgets(2)); // in Hierarchy and Inspector header
 
-    // 3. Verify Inspector
-    expect(find.text('INSPECTOR'), findsOneWidget);
+    // 3. Verify Viewport Tabs
+    expect(find.text('Scene'), findsOneWidget);
+    expect(find.text('Game'), findsOneWidget);
+    expect(find.text('Shaded'), findsOneWidget);
+    expect(find.text('Gizmos'), findsOneWidget);
+    expect(find.text('Persp'), findsOneWidget); // Unity orientation cone
+
+    // 4. Verify Inspector Panel Tab & Transform Fields
+    expect(find.text('Inspector'), findsOneWidget);
     expect(find.text('Transform'), findsOneWidget);
-    expect(find.text('Mesh Renderer'), findsOneWidget);
-    expect(find.text('Rigidbody 3D'), findsOneWidget);
+    expect(find.text('Position'), findsOneWidget);
+    expect(find.text('Rotation'), findsOneWidget);
+    expect(find.text('Scale'), findsOneWidget);
+    expect(find.text('Add Component'), findsOneWidget);
 
-    // 4. Verify Viewport Status Badge (initially EDITING)
-    expect(find.text('EDITING'), findsOneWidget);
+    // 5. Verify Bottom Project & Console Tabs
+    expect(find.text('Project'), findsOneWidget);
+    expect(find.text('Console'), findsOneWidget);
+    expect(find.text('Assets'), findsNWidgets(2)); // in Top Menu and Project folder tree
+    expect(find.text('Scenes'), findsOneWidget);
 
-    // 5. Test Play Button Toggle
+    // 6. Test Play Button Toggle
     final playButtonFinder = find.byTooltip('Play');
     expect(playButtonFinder, findsOneWidget);
     await tester.tap(playButtonFinder);
     await tester.pump(const Duration(milliseconds: 16));
 
-    // Verify it switches to PLAYING
-    expect(find.text('PLAYING'), findsOneWidget);
-
-    // Stop Play
-    final stopButtonFinder = find.byTooltip('Stop');
-    await tester.tap(stopButtonFinder);
+    // Verify stop tooltip is now present
+    expect(find.byTooltip('Stop Play Mode'), findsOneWidget);
+    await tester.tap(find.byTooltip('Stop Play Mode'));
     await tester.pump(const Duration(milliseconds: 16));
-    expect(find.text('EDITING'), findsOneWidget);
+    expect(find.byTooltip('Play'), findsOneWidget);
   });
 }
