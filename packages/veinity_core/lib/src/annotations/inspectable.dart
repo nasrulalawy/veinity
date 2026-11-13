@@ -48,3 +48,4 @@ class RequireComponent {
 
   const RequireComponent(this.requiredType);
 }
+

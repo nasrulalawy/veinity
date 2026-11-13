@@ -40,3 +40,4 @@ class LightComponent extends Component {
     if (color != null) this.color = color;
   }
 }
+

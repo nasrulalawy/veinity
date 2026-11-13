@@ -22,3 +22,4 @@ class Collision3D {
     required this.relativeVelocity,
   });
 }
+

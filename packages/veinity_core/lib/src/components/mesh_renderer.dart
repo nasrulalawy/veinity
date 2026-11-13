@@ -71,3 +71,4 @@ class MeshRenderer extends Component {
     if (material != null) this.material = material;
   }
 }
+

@@ -142,3 +142,4 @@ abstract class Component {
   /// Adds a new component to this GameObject.
   T addComponent<T extends Component>(T component) => gameObject.addComponent<T>(component);
 }
+

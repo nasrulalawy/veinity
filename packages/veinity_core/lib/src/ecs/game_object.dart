@@ -197,3 +197,4 @@ class GameObject {
   /// Destroys the specified [gameObject].
   static void destroyObject(GameObject gameObject) => gameObject.destroy();
 }
+

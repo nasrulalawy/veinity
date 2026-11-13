@@ -223,3 +223,4 @@ class Scene {
     _startQueue.removeWhere((c) => c.isDestroyed);
   }
 }
+
