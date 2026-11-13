@@ -478,3 +478,4 @@ class _CardWrapper extends StatelessWidget {
     );
   }
 }
+

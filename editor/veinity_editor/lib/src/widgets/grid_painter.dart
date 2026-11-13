@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart' hide Transform;
 import 'package:veinity_flutter/veinity_flutter.dart';
 
-/// Renders a 3D floor grid and selection gizmo on top of the Scene Viewport.
+/// Renders a 3D floor grid, selection bounding box, and transform gizmo in the Scene Viewport.
 class GridPainter extends CustomPainter {
   final Scene scene;
   final GameObject? selectedObject;
@@ -19,16 +19,16 @@ class GridPainter extends CustomPainter {
 
     // 1. Draw XZ Floor Grid
     final gridPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.12)
+      ..color = Colors.white.withValues(alpha: 0.18)
       ..strokeWidth = 1.0;
 
     final axisXPaint = Paint()
-      ..color = Colors.redAccent.withValues(alpha: 0.5)
-      ..strokeWidth = 1.5;
+      ..color = Colors.redAccent.withValues(alpha: 0.75)
+      ..strokeWidth = 2.0;
 
     final axisZPaint = Paint()
-      ..color = Colors.blueAccent.withValues(alpha: 0.5)
-      ..strokeWidth = 1.5;
+      ..color = Colors.blueAccent.withValues(alpha: 0.75)
+      ..strokeWidth = 2.0;
 
     const gridExtent = 10;
     const step = 1.0;
@@ -55,38 +55,80 @@ class GridPainter extends CustomPainter {
       }
     }
 
-    // 2. Draw Selection Transform Gizmo (RGB = XYZ axes at selected object)
+    // 2. Draw Selection Wireframe Box & Transform Gizmo
     if (selectedObject != null && !selectedObject!.isDestroyed) {
+      final worldMat = selectedObject!.transform.worldMatrix;
       final origin = selectedObject!.transform.position;
       final rot = selectedObject!.transform.rotation;
 
+      // Draw Wireframe bounding cube outline around selected object
+      final localCorners = [
+        Vector3(-0.52, -0.52, -0.52), Vector3(0.52, -0.52, -0.52),
+        Vector3(0.52, 0.52, -0.52),   Vector3(-0.52, 0.52, -0.52),
+        Vector3(-0.52, -0.52, 0.52),  Vector3(0.52, -0.52, 0.52),
+        Vector3(0.52, 0.52, 0.52),    Vector3(-0.52, 0.52, 0.52),
+      ];
+
+      final screenCorners = <Offset?>[];
+      for (final corner in localCorners) {
+        final wPos = worldMat.transform3(corner.clone());
+        final clip = viewProj.transform(Vector4(wPos.x, wPos.y, wPos.z, 1.0));
+        if (clip.w > 0.01) {
+          screenCorners.add(_ndcToScreen(clip, size));
+        } else {
+          screenCorners.add(null);
+        }
+      }
+
+      final outlinePaint = Paint()
+        ..color = Colors.amberAccent
+        ..strokeWidth = 1.5
+        ..style = PaintingStyle.stroke;
+
+      // 12 Bounding Box Edges
+      final edges = [
+        [0, 1], [1, 2], [2, 3], [3, 0], // Back face
+        [4, 5], [5, 6], [6, 7], [7, 4], // Front face
+        [0, 4], [1, 5], [2, 6], [3, 7], // Connecting edges
+      ];
+
+      for (final edge in edges) {
+        final c1 = screenCorners[edge[0]];
+        final c2 = screenCorners[edge[1]];
+        if (c1 != null && c2 != null) {
+          canvas.drawLine(c1, c2, outlinePaint);
+        }
+      }
+
+      // Draw RGB Transform Axis Gizmo at object pivot
       final pOrigin = viewProj.transform(Vector4(origin.x, origin.y, origin.z, 1.0));
       if (pOrigin.w > 0.01) {
         final sOrigin = _ndcToScreen(pOrigin, size);
 
         // X Axis (Red)
-        final xEnd = origin + rot.rotate(Vector3(1.2, 0.0, 0.0));
+        final xEnd = origin + rot.asRotationMatrix().transform(Vector3(1.5, 0.0, 0.0));
         final pX = viewProj.transform(Vector4(xEnd.x, xEnd.y, xEnd.z, 1.0));
         if (pX.w > 0.01) {
-          canvas.drawLine(sOrigin, _ndcToScreen(pX, size), Paint()..color = Colors.red..strokeWidth = 2.5);
+          canvas.drawLine(sOrigin, _ndcToScreen(pX, size), Paint()..color = Colors.redAccent..strokeWidth = 3.0);
         }
 
         // Y Axis (Green)
-        final yEnd = origin + rot.rotate(Vector3(0.0, 1.2, 0.0));
+        final yEnd = origin + rot.asRotationMatrix().transform(Vector3(0.0, 1.5, 0.0));
         final pY = viewProj.transform(Vector4(yEnd.x, yEnd.y, yEnd.z, 1.0));
         if (pY.w > 0.01) {
-          canvas.drawLine(sOrigin, _ndcToScreen(pY, size), Paint()..color = Colors.greenAccent..strokeWidth = 2.5);
+          canvas.drawLine(sOrigin, _ndcToScreen(pY, size), Paint()..color = Colors.greenAccent..strokeWidth = 3.0);
         }
 
         // Z Axis (Blue)
-        final zEnd = origin + rot.rotate(Vector3(0.0, 0.0, 1.2));
+        final zEnd = origin + rot.asRotationMatrix().transform(Vector3(0.0, 0.0, 1.5));
         final pZ = viewProj.transform(Vector4(zEnd.x, zEnd.y, zEnd.z, 1.0));
         if (pZ.w > 0.01) {
-          canvas.drawLine(sOrigin, _ndcToScreen(pZ, size), Paint()..color = Colors.lightBlueAccent..strokeWidth = 2.5);
+          canvas.drawLine(sOrigin, _ndcToScreen(pZ, size), Paint()..color = Colors.lightBlueAccent..strokeWidth = 3.0);
         }
 
-        // Center selection circle
-        canvas.drawCircle(sOrigin, 4.0, Paint()..color = Colors.yellowAccent);
+        // Center pivot point
+        canvas.drawCircle(sOrigin, 5.0, Paint()..color = Colors.yellowAccent);
+        canvas.drawCircle(sOrigin, 5.0, Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 1.0);
       }
     }
   }

@@ -129,22 +129,22 @@ class Transform {
 
   // Direction vectors (normalized) in world space
   Vector3 get forward {
-    final rot = rotation;
-    return rot.rotate(Vector3Helpers.forward);
+    final rotMat = rotation.asRotationMatrix();
+    return rotMat.transform(Vector3Helpers.forward);
   }
 
   Vector3 get back => -forward;
 
   Vector3 get up {
-    final rot = rotation;
-    return rot.rotate(Vector3Helpers.up);
+    final rotMat = rotation.asRotationMatrix();
+    return rotMat.transform(Vector3Helpers.up);
   }
 
   Vector3 get down => -up;
 
   Vector3 get right {
-    final rot = rotation;
-    return rot.rotate(Vector3Helpers.right);
+    final rotMat = rotation.asRotationMatrix();
+    return rotMat.transform(Vector3Helpers.right);
   }
 
   Vector3 get left => -right;
@@ -156,7 +156,8 @@ class Transform {
     if (space == Space.world) {
       position = position + translation;
     } else {
-      final oriented = rotation.rotate(translation);
+      final rotMat = rotation.asRotationMatrix();
+      final oriented = rotMat.transform(translation.clone());
       position = position + oriented;
     }
   }

@@ -117,7 +117,16 @@ class FlutterFallbackRenderer extends CustomPainter {
       [Vector3(-0.5, -0.5, -0.5), Vector3(-0.5, -0.5, 0.5), Vector3(-0.5, 0.5, 0.5), Vector3(-0.5, 0.5, -0.5)],
     ];
 
-    for (final quad in cubeQuads) {
+    final List<List<Vector3>> quads;
+    if (mesh.primitiveType == PrimitiveType.plane) {
+      quads = [
+        [Vector3(-0.5, 0.0, 0.5), Vector3(0.5, 0.0, 0.5), Vector3(0.5, 0.0, -0.5), Vector3(-0.5, 0.0, -0.5)],
+      ];
+    } else {
+      quads = cubeQuads;
+    }
+
+    for (final quad in quads) {
       final worldVertices = quad.map((v) => worldMat.transform3(v.clone())).toList();
 
       // Calculate face normal

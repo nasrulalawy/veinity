@@ -54,11 +54,12 @@ class CameraComponent extends Component {
     super.onDestroy();
   }
 
-  /// Calculates the view matrix (inverse of world transform matrix).
+  /// Calculates the view matrix matching standard OpenGL/Metal projection conventions.
   Matrix4 get viewMatrix {
-    final m = Matrix4.copy(transform.worldMatrix);
-    m.invert();
-    return m;
+    final pos = transform.position;
+    final f = transform.forward;
+    final u = transform.up;
+    return makeViewMatrix(pos, pos + f, u);
   }
 
   /// Calculates the projection matrix for the given viewport aspect ratio.

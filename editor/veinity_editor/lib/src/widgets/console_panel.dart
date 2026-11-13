@@ -134,3 +134,4 @@ class _ConsolePanelState extends State<ConsolePanel> with SingleTickerProviderSt
     );
   }
 }
+

@@ -61,32 +61,34 @@ class _EditorHomeScreenState extends State<EditorHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          // 1. Top Control Bar (Toolbar)
-          EditorToolbar(state: _editorState),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 1. Top Control Bar (Toolbar)
+            EditorToolbar(state: _editorState),
 
-          // 2. Middle Main Workspace (Hierarchy | Viewport | Inspector)
-          Expanded(
-            child: Row(
-              children: [
-                // Left Panel: Scene Hierarchy
-                HierarchyPanel(state: _editorState),
+            // 2. Middle Main Workspace (Hierarchy | Viewport | Inspector)
+            Expanded(
+              child: Row(
+                children: [
+                  // Left Panel: Scene Hierarchy
+                  HierarchyPanel(state: _editorState),
 
-                // Center Viewport: 3D Scene View & Interactive Gizmo
-                Expanded(
-                  child: SceneViewport(state: _editorState),
-                ),
+                  // Center Viewport: 3D Scene View & Interactive Gizmo
+                  Expanded(
+                    child: SceneViewport(state: _editorState),
+                  ),
 
-                // Right Panel: Property Inspector
-                InspectorPanel(state: _editorState),
-              ],
+                  // Right Panel: Property Inspector
+                  InspectorPanel(state: _editorState),
+                ],
+              ),
             ),
-          ),
 
-          // 3. Bottom Panel (Console & Project Assets)
-          ConsolePanel(state: _editorState),
-        ],
+            // 3. Bottom Panel (Console & Project Assets)
+            ConsolePanel(state: _editorState),
+          ],
+        ),
       ),
     );
   }
